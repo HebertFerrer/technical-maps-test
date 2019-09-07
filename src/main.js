@@ -6,6 +6,7 @@ import * as VueGoogleMaps from 'vue2-google-maps';
 import '@babel/polyfill'
 import 'roboto-fontface/css/roboto/roboto-fontface.css'
 import '@mdi/font/css/materialdesignicons.css'
+import VueTheMask from 'vue-the-mask'
 
 Vue.config.productionTip = false
 
@@ -17,6 +18,7 @@ Vue.use(VueGoogleMaps, {
     language: 'ES',
   },
 })
+Vue.use(VueTheMask)
 
 new Vue({
   router,
