@@ -15,11 +15,29 @@
 
     <v-app-bar app color="indigo" dark>
       <v-app-bar-nav-icon @click.stop="drawer = !drawer"></v-app-bar-nav-icon>
-      <v-toolbar-title>Geolocalización</v-toolbar-title>
+      <v-toolbar-title class="mr-5">Geolocalización</v-toolbar-title>
+      <v-autocomplete
+        label="Buscar marcador"
+        solo-inverted
+        flat
+        hide-details
+        hide-no-data
+        :items="components"
+        aria-autocomplete="off"
+        v-model="search"
+        auto-select-first
+        clearable
+      ></v-autocomplete>
+      <div class="flex-grow-1"></div>
     </v-app-bar>
 
     <v-content>
-      <GmapMap class="map" :center="{lat:10, lng:10}" :zoom="7" ref="mapRef" map-type-id="terrain">
+      <GmapMap
+       class="map"
+       :center="{lat:-34.6131516, lng:-58.3772316}"
+       :zoom="7" ref="mapRef"
+       map-type-id="terrain"
+      >
         <gmapInfoWindow
           :options="info.options"
           :position="info.position"
@@ -40,19 +58,14 @@
           </p>
           <p>
             <strong>(X, Y):</strong>
-            {{info.data.coordinates.lng}} - {{info.data.coordinates.lat}}
+            {{info.data.coordinates.lng}}, {{info.data.coordinates.lat}}
           </p>
           <p>
             <strong>Categoría:</strong>
             {{info.data.category}}
           </p>
           <v-btn color="red lighten-1" x-small text @click="openEraseDialog">Eliminar</v-btn>
-          <v-btn
-           color="yellow darken-4"
-           x-small
-           text
-           @click="openModify(info.currentKey)"
-          >Modificar</v-btn>
+          <v-btn color="yellow darken-4" x-small text @click="openModify(info.currentKey)">Modificar</v-btn>
         </gmapInfoWindow>
         <GmapMarker
           :key="index"
@@ -83,6 +96,7 @@
                     required
                     counter
                     maxlength="100"
+                    prepend-inner-icon="description"
                     :rules="[rules.required]"
                   ></v-text-field>
                 </v-col>
@@ -94,6 +108,7 @@
                     hint="ej: Av. Eduardo Madero 1020, C1001 CABA"
                     :rules="[rules.required]"
                     counter
+                    prepend-inner-icon="directions"
                     maxlength="100"
                   ></v-text-field>
                 </v-col>
@@ -103,6 +118,7 @@
                     v-mask="cellphoneMask"
                     v-model="form.cellphone"
                     label="Teléfono*"
+                    prepend-inner-icon="phone_android"
                     hint="ej: 54 9 11 5272 0900"
                     :rules="[rules.required]"
                   ></v-text-field>
@@ -110,10 +126,11 @@
                 <!-- Category -->
                 <v-col class="d-flex" cols="12">
                   <v-select
-                   :items="items"
-                   label="Categoría*"
-                   v-model="form.category"
-                   :rules="[rules.required]"
+                    :items="items"
+                    label="Categoría*"
+                    v-model="form.category"
+                    prepend-inner-icon="category"
+                    :rules="[rules.required]"
                   ></v-select>
                 </v-col>
                 <!-- Coordinates -->
@@ -126,6 +143,7 @@
                     label="Longitud*"
                     required
                     hint="ej: 100.23"
+                    prepend-inner-icon="my_location"
                     v-model.number="form.coordinates.lng"
                     :rules="[rules.required, rules.number, rules.coordinatesX]"
                   ></v-text-field>
@@ -136,6 +154,7 @@
                     label="Latitud*"
                     required
                     v-model.number="form.coordinates.lat"
+                    prepend-inner-icon="my_location"
                     :rules="[rules.required, rules.number, rules.coordinatesY]"
                     hint="ej: 23.43"
                   ></v-text-field>
@@ -159,9 +178,7 @@
         <v-card>
           <v-card-title class="headline">Confirmación</v-card-title>
 
-          <v-card-text>
-            ¿Estas seguro que quieres eliminar este marcador?
-          </v-card-text>
+          <v-card-text>¿Estas seguro que quieres eliminar este marcador?</v-card-text>
 
           <v-card-actions>
             <div class="flex-grow-1"></div>
@@ -190,6 +207,7 @@ export default {
     eraseDialog: false,
     cellphoneMask: "(###) ####-####",
 
+    search: null,
     isModify: false,
 
     items: ["Comercial", "Residencial", "Mixta"],
@@ -205,8 +223,7 @@ export default {
         (value < 90 && value > -90) ||
         "El valor no debe ser mayor a 90 ni menor a -90",
       number: value =>
-        /^[0-9]+(\.[0-9]+)?$/g.test(value) ||
-        "El valor debe ser numerico"
+        /^(-)?[0-9]+(\.[0-9]+)?$/g.test(value) || "El valor debe ser numerico"
     },
 
     form: {
@@ -245,6 +262,16 @@ export default {
       }
     }
   }),
+
+  computed: {
+    components() {
+      let components = [];
+      for (let marker of this.markers) {
+        components.push(marker.description);
+      }
+      return components;
+    }
+  },
 
   methods: {
     submit() {
@@ -321,7 +348,7 @@ export default {
 
     close() {
       this.dialog = false;
-      this.$refs.form.reset()
+      this.$refs.form.reset();
     },
 
     fillFormData(index) {
@@ -341,10 +368,6 @@ export default {
       this.markers[index].coordinates.lng = this.form.coordinates.lng;
       this.markers[index].coordinates.lat = this.form.coordinates.lat;
     },
-
-    consola() {
-      console.log(this.markers[this.info.currentKey].description);
-    }
   },
 
   mounted() {
@@ -353,6 +376,23 @@ export default {
       // map is loaded now
       data === null ? (this.markers = []) : (this.markers = data);
     });
+  },
+
+  watch: {
+    search(val) {
+      this.$refs.mapRef.$mapPromise.then(map => {
+        for(let marker of this.markers) {
+          if(marker.description == val) {
+            map.panTo(
+              {
+                lat: marker.coordinates.lat,
+                lng: marker.coordinates.lng
+              }
+            );
+          }
+        }
+      });
+    }
   }
 };
 </script>
