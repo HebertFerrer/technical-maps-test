@@ -27,7 +27,13 @@
     </v-app-bar>
 
     <v-content>
-      <GmapMap class="map" :center="{lat:10, lng:10}" :zoom="7" map-type-id="terrain">
+      <GmapMap
+       class="map"
+       :center="{lat:10, lng:10}"
+       :zoom="7"
+       ref="mapRef"
+       map-type-id="terrain"
+      >
         <gmapInfoWindow
           :options="info.options"
           :position="info.position"
@@ -143,7 +149,7 @@
         </v-card-text>
         <v-card-actions>
           <div class="flex-grow-1"></div>
-          <v-btn color="red lighten-1" text @click="dialog = false">Cerrar</v-btn>
+          <v-btn color="red lighten-1" text @click="close">Cerrar</v-btn>
           <v-btn color="indigo darken-1" text @click="submit" :disabled="!valid">Guardar</v-btn>
         </v-card-actions>
       </v-card>
@@ -222,16 +228,12 @@ export default {
 
   }),
 
-  // computed: {
-  //   markers () {
-  //   },
-  // },
-
   methods: {
     submit() {
       if (this.$refs.form.validate()) {
         this.markers.push(this.form);
-
+        localStorage.setItem('markers', JSON.stringify(this.markers));
+        // this.$refs.form.reset();
         this.dialog = false;
       }
     },
@@ -247,13 +249,27 @@ export default {
       this.info.position = this.getPosition(marker)
       this.info.data = marker;
       if (this.info.currentKey == key) {
-        this.info.opened = !this.infoOpened
+        this.info.opened = !this.info.opened
       } else {
         this.info.opened = true
         this.info.currentKey = key
       }
     },
+
+    close() {
+      this.dialog = false;
+      this.$refs.form.reset();
+    }
+  },
+
+  mounted() {
+    let data = JSON.parse(localStorage.getItem('markers'));
+    this.$refs.mapRef.$mapPromise.then((map) => {
+      // map is loaded now
+      (data === null) ? this.markers = [] : this.markers = data;
+    });
   }
+
 };
 </script>
 
