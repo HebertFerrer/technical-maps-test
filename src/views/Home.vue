@@ -10,14 +10,6 @@
             <v-list-item-title>Agregar</v-list-item-title>
           </v-list-item-content>
         </v-list-item>
-        <v-list-item @click>
-          <v-list-item-action>
-            <v-icon>mdi-contact-mail</v-icon>
-          </v-list-item-action>
-          <v-list-item-content>
-            <v-list-item-title>Contact</v-list-item-title>
-          </v-list-item-content>
-        </v-list-item>
       </v-list>
     </v-navigation-drawer>
 
@@ -165,7 +157,7 @@
     <template>
       <v-dialog v-model="eraseDialog" max-width="290">
         <v-card>
-          <v-card-title class="headline">Use Google's location service?</v-card-title>
+          <v-card-title class="headline">Confirmación</v-card-title>
 
           <v-card-text>
             ¿Estas seguro que quieres eliminar este marcador?
@@ -173,16 +165,12 @@
 
           <v-card-actions>
             <div class="flex-grow-1"></div>
-            <v-btn color="green darken-1" text @click="eraseDialog = false">Cancelar</v-btn>
-            <v-btn color="green darken-1" text @click="erase">OK</v-btn>
+            <v-btn color="indigo darken-1" text @click="eraseDialog = false">Cancelar</v-btn>
+            <v-btn color="red lighten-1" text @click="erase">OK</v-btn>
           </v-card-actions>
         </v-card>
       </v-dialog>
     </template>
-  </v-app>
-</template>
-
-
     <v-footer color="indigo" app>
       <span class="white--text">&copy; 2019</span>
     </v-footer>
