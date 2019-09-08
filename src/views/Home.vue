@@ -27,13 +27,7 @@
     </v-app-bar>
 
     <v-content>
-      <GmapMap
-       class="map"
-       :center="{lat:10, lng:10}"
-       :zoom="7"
-       ref="mapRef"
-       map-type-id="terrain"
-      >
+      <GmapMap class="map" :center="{lat:10, lng:10}" :zoom="7" ref="mapRef" map-type-id="terrain">
         <gmapInfoWindow
           :options="info.options"
           :position="info.position"
@@ -60,6 +54,13 @@
             <strong>Categoría:</strong>
             {{info.data.category}}
           </p>
+          <v-btn color="red lighten-1" x-small text @click="openEraseDialog">Eliminar</v-btn>
+          <v-btn
+           color="yellow darken-4"
+           x-small
+           text
+           @click="openModify(info.currentKey)"
+          >Modificar</v-btn>
         </gmapInfoWindow>
         <GmapMarker
           :key="index"
@@ -116,7 +117,12 @@
                 </v-col>
                 <!-- Category -->
                 <v-col class="d-flex" cols="12">
-                  <v-select :items="items" label="Categoría*" v-model="form.category"></v-select>
+                  <v-select
+                   :items="items"
+                   label="Categoría*"
+                   v-model="form.category"
+                   :rules="[rules.required]"
+                  ></v-select>
                 </v-col>
                 <!-- Coordinates -->
                 <v-col cols="12">
@@ -155,6 +161,28 @@
       </v-card>
     </v-dialog>
 
+    <!-- Erase dialog -->
+    <template>
+      <v-dialog v-model="eraseDialog" max-width="290">
+        <v-card>
+          <v-card-title class="headline">Use Google's location service?</v-card-title>
+
+          <v-card-text>
+            ¿Estas seguro que quieres eliminar este marcador?
+          </v-card-text>
+
+          <v-card-actions>
+            <div class="flex-grow-1"></div>
+            <v-btn color="green darken-1" text @click="eraseDialog = false">Cancelar</v-btn>
+            <v-btn color="green darken-1" text @click="erase">OK</v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
+    </template>
+  </v-app>
+</template>
+
+
     <v-footer color="indigo" app>
       <span class="white--text">&copy; 2019</span>
     </v-footer>
@@ -171,7 +199,10 @@ export default {
     drawer: null,
     markers: [],
     dialog: false,
-    cellphoneMask: "####-####",
+    eraseDialog: false,
+    cellphoneMask: "(###) ####-####",
+
+    isModify: false,
 
     items: ["Comercial", "Residencial", "Mixta"],
 
@@ -186,8 +217,8 @@ export default {
         (value < 90 && value > -90) ||
         "El valor no debe ser mayor a 90 ni menor a -90",
       number: value =>
-        /^[0-9]+(\.[0-9]{1,2})?$/g.test(value) ||
-        "El valor debe ser un numero seguido de maximo dos decimales"
+        /^[0-9]+(\.[0-9]+)?$/g.test(value) ||
+        "El valor debe ser numerico"
     },
 
     form: {
@@ -224,52 +255,117 @@ export default {
           height: -35
         }
       }
-    },
-
+    }
   }),
 
   methods: {
     submit() {
       if (this.$refs.form.validate()) {
-        this.markers.push(this.form);
-        localStorage.setItem('markers', JSON.stringify(this.markers));
-        // this.$refs.form.reset();
-        this.dialog = false;
+        if (this.isModify) {
+          this.modify();
+        } else {
+          this.create();
+        }
       }
+    },
+
+    create() {
+      this.markers.push({
+        description: this.form.description,
+        direction: this.form.direction,
+        cellphone: this.form.cellphone,
+        category: this.form.category,
+        coordinates: {
+          lng: this.form.coordinates.lng,
+          lat: this.form.coordinates.lat
+        }
+      });
+      localStorage.setItem("markers", JSON.stringify(this.markers));
+      this.$refs.form.reset();
+      this.dialog = false;
+    },
+
+    erase() {
+      let index = this.info.currentKey;
+      this.info.opened = false;
+      this.markers.splice(index, 1);
+      localStorage.setItem("markers", JSON.stringify(this.markers));
+      this.eraseDialog = false;
+    },
+
+    openEraseDialog() {
+      this.eraseDialog = true;
+    },
+
+    modify() {
+      let index = this.info.currentKey;
+      this.fillMarkerData(index);
+      localStorage.setItem("markers", JSON.stringify(this.markers));
+      this.$refs.form.reset();
+      this.dialog = false;
+    },
+
+    openModify(index) {
+      this.info.opened = false;
+      this.isModify = true;
+      this.fillFormData(index);
+      this.dialog = true;
     },
 
     getPosition: function(marker) {
       return {
         lat: parseFloat(marker.coordinates.lat),
         lng: parseFloat(marker.coordinates.lng)
-      }
+      };
     },
 
     toggleInfo: function(marker, key) {
-      this.info.position = this.getPosition(marker)
+      this.info.position = this.getPosition(marker);
       this.info.data = marker;
+      // Open or close
       if (this.info.currentKey == key) {
-        this.info.opened = !this.info.opened
+        this.info.opened = !this.info.opened;
       } else {
-        this.info.opened = true
-        this.info.currentKey = key
+        this.info.opened = true;
+        this.info.currentKey = key;
       }
     },
 
     close() {
       this.dialog = false;
-      this.$refs.form.reset();
+      this.$refs.form.reset()
+    },
+
+    fillFormData(index) {
+      this.form.description = this.markers[index].description;
+      this.form.direction = this.markers[index].direction;
+      this.form.cellphone = this.markers[index].cellphone;
+      this.form.category = this.markers[index].category;
+      this.form.coordinates.lng = this.markers[index].coordinates.lng;
+      this.form.coordinates.lat = this.markers[index].coordinates.lat;
+    },
+
+    fillMarkerData(index) {
+      this.markers[index].description = this.form.description;
+      this.markers[index].direction = this.form.direction;
+      this.markers[index].cellphone = this.form.cellphone;
+      this.markers[index].category = this.form.category;
+      this.markers[index].coordinates.lng = this.form.coordinates.lng;
+      this.markers[index].coordinates.lat = this.form.coordinates.lat;
+    },
+
+    consola() {
+      console.log(this.markers[this.info.currentKey].description);
     }
   },
 
   mounted() {
-    let data = JSON.parse(localStorage.getItem('markers'));
-    this.$refs.mapRef.$mapPromise.then((map) => {
+    let data = JSON.parse(localStorage.getItem("markers"));
+    this.$refs.mapRef.$mapPromise.then(map => {
       // map is loaded now
-      (data === null) ? this.markers = [] : this.markers = data;
+      data === null ? (this.markers = []) : (this.markers = data);
     });
   }
-
 };
 </script>
 
