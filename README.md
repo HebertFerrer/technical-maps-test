@@ -32,3 +32,4 @@ See [Configuration Reference](https://cli.vuejs.org/config/).
 
 - Template: https://github.com/vuetifyjs/vuetify/blob/master/packages/docs/src/examples/layouts/baseline.vue
 - Manejo de google maps: https://www.npmjs.com/package/vue2-google-maps
+- deploy: https://reactgo.com/vue-app-deploy-to-github-pages/
