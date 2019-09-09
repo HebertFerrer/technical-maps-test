@@ -2,7 +2,7 @@
   <v-app id="inspire">
     <v-navigation-drawer v-model="drawer" app>
       <v-list dense>
-        <v-list-item @click="dialog = !dialog">
+        <v-list-item @click="openCreate">
           <v-list-item-action>
             <v-icon>add_circle</v-icon>
           </v-list-item-action>
@@ -298,6 +298,11 @@ export default {
       localStorage.setItem("markers", JSON.stringify(this.markers));
       this.$refs.form.reset();
       this.dialog = false;
+    },
+
+    openCreate() {
+      this.isModify = false;
+      this.dialog = true;
     },
 
     erase() {
